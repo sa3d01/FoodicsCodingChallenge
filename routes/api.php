@@ -5,5 +5,5 @@ use App\Http\Controllers\Api\OrderController;
 
 
 
-Route::post('order', [OrderController::class, 'store']);
+Route::post('order', OrderController::class);
 

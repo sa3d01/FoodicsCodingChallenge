@@ -14,7 +14,7 @@ $ composer install
 ``` bash
 # run database migration and seed
 $ php artisan migrate:refresh --seed
-
+$ php artisan queue:work
 ```
 
 ## Usage

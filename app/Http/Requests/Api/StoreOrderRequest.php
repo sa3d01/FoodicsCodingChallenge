@@ -35,13 +35,17 @@ class StoreOrderRequest extends FormRequest
     {
         $validator->after(function ($validator){
             //validate stock
-            foreach ($this->products as $productObj){
-                $product=Product::find($productObj['product_id']);
-                foreach ($product->ingredients as $product_ingredient){
-                    $ingredient_live_stock=Stock::where('ingredient_id',$product_ingredient->ingredient_id)->value('live_stock');
-                    $ingredient_required=$product_ingredient['amount']*$productObj['quantity'];
-                    if($ingredient_live_stock < $ingredient_required){
-                        $validator->errors()->add('unavailable', 'there is no enough stock of '.$product_ingredient->ingredient->name);
+            if($this->has('products')){
+                foreach ($this->products as $productObj){
+                    $product=Product::find($productObj['product_id']);
+                    if ($product){
+                        foreach ($product->ingredients as $product_ingredient){
+                            $ingredient_live_stock=Stock::where('ingredient_id',$product_ingredient->ingredient_id)->value('live_stock');
+                            $ingredient_required=$product_ingredient['amount']*$productObj['quantity'];
+                            if($ingredient_live_stock < $ingredient_required){
+                                $validator->errors()->add('unavailable', 'there is no enough stock of '.$product_ingredient->ingredient->name);
+                            }
+                        }
                     }
                 }
             }
@@ -51,7 +55,7 @@ class StoreOrderRequest extends FormRequest
     {
         throw new HttpResponseException(response()->json([
             'message' => $validator->errors()->first(),
-        ], 400));
+        ], 422));
     }
 
 }
