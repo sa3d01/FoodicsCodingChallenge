@@ -5,10 +5,18 @@ namespace App\Observers;
 use App\Events\SendMail;
 use App\Models\OrderItem;
 use App\Models\Stock;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\Event;
+use JetBrains\PhpStorm\Pure;
 
 class OrderItemObserver
 {
+    protected OrderService $orderService;
+
+    #[Pure] public function __construct()
+    {
+        $this->orderService = new OrderService();
+    }
     /**
      * Handle the OrderItem "created" event.
      *
@@ -18,16 +26,11 @@ class OrderItemObserver
     public function created(OrderItem $orderItem)
     {
         foreach ($orderItem->product->ingredients as $product_ingredient) {
-            $ingredient_stock = Stock::where('ingredient_id', $product_ingredient->ingredient_id)->first();
+            $ingredient_stock_model = Stock::where('ingredient_id', $product_ingredient->ingredient_id)->first();
             $ingredient_required = $product_ingredient->amount * $orderItem['quantity'];
-            $ingredient_stock->update([
-                'live_stock' => $ingredient_stock->live_stock - $ingredient_required
-            ]);
-            if ($ingredient_stock->notify_status == false && ($ingredient_stock->live_stock < ($ingredient_stock->base_stock / 2))) {
-                Event::dispatch(new SendMail($ingredient_stock));
-                $ingredient_stock->update([
-                    'notify_status' => true
-                ]);
+            $this->orderService->updateStock($ingredient_stock_model,$ingredient_required);
+            if ($ingredient_stock_model->notify_status == false && ($ingredient_stock_model->live_stock < ($ingredient_stock_model->base_stock / 2))) {
+                $this->orderService->sendNotifyMail($ingredient_stock_model);
             }
         }
     }

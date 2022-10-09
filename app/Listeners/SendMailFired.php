@@ -3,9 +3,6 @@
 namespace App\Listeners;
 
 use App\Events\SendMail;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Mail;
 
 class SendMailFired
 {
@@ -22,7 +19,7 @@ class SendMailFired
     /**
      * Handle the event.
      *
-     * @param  \App\Events\SendMail  $event
+     * @param \App\Events\SendMail $event
      * @return void
      */
     public function handle(SendMail $event)
