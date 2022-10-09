@@ -13,32 +13,39 @@ use Illuminate\Support\Facades\Event;
 
 class OrderService
 {
-    public function validateStock($data){
-        foreach ($data['products'] as $productObj){
-            $product=Product::find($productObj['product_id']);
-            foreach ($product->ingredients as $product_ingredient){
-                $ingredient_live_stock=Stock::where('ingredient_id',$product_ingredient->ingredient_id)->value('live_stock');
-                $ingredient_required=$product_ingredient['amount']*$productObj['quantity'];
-                if($ingredient_live_stock < $ingredient_required){
+    public function placingOrder($data)
+    {
+        $this->validateStock($data);
+        DB::beginTransaction();
+        $order = $this->createOrderModel();
+        $this->createOrderItems($order->id, $data['products']);
+        // UpdateLiveStock::dispatch($item);
+        DB::commit();
+    }
+
+    public function validateStock($data)
+    {
+        foreach ($data['products'] as $productObj) {
+            $product = Product::find($productObj['product_id']);
+            foreach ($product->ingredients as $product_ingredient) {
+                $ingredient_live_stock = Stock::where('ingredient_id', $product_ingredient->ingredient_id)->value('live_stock');
+                $ingredient_required = $product_ingredient['amount'] * $productObj['quantity'];
+                if ($ingredient_live_stock < $ingredient_required) {
                     throw new HttpResponseException(response()->json([
-                        'message' => 'there is no enough stock of '.$product_ingredient->ingredient->name,
+                        'message' => 'there is no enough stock of ' . $product_ingredient->ingredient->name,
                     ], 422));
                 }
             }
         }
     }
-    public function placingOrder($data)
+
+    public function createOrderModel()
     {
-        DB::beginTransaction();
-        $order = $this->createOrder();
-        $this->createOrderItems($order->id,$data['products']);
-        // UpdateLiveStock::dispatch($item);
-        DB::commit();
-    }
-    public function createOrder(){
         return Order::create();
     }
-    public function createOrderItems($orderId,$items){
+
+    public function createOrderItems($orderId, $items)
+    {
         foreach ($items as $item) {
             OrderItem::create([
                 'order_id' => $orderId,
@@ -47,21 +54,26 @@ class OrderService
             ]);
         }
     }
-    public function updateStock($ingredient_stock_model,$ingredient_required){
+
+    public function updateStock($ingredient_stock_model, $ingredient_required)
+    {
         $ingredient_stock_model->update([
             'live_stock' => $ingredient_stock_model->live_stock - $ingredient_required
         ]);
     }
-    public function sendNotifyMail($ingredient_stock){
+
+    public function sendNotifyMail($ingredient_stock)
+    {
         if (($ingredient_stock->live_stock < ($ingredient_stock->base_stock / 2))) {
             Event::dispatch(new SendMail($ingredient_stock));
             $this->updateNotifyStatus($ingredient_stock);
         }
     }
-    public function updateNotifyStatus($ingredient_stock){
+
+    public function updateNotifyStatus($ingredient_stock)
+    {
         $ingredient_stock->update([
             'notify_status' => true
         ]);
     }
-
 }

@@ -9,7 +9,6 @@ class OrderController
 {
     public function __invoke(StoreOrderRequest $request, OrderService $orderService): \Illuminate\Http\JsonResponse
     {
-        $orderService->validateStock($request->validated());
         $orderService->placingOrder($request->validated());
         return response()->json(null, 201);
     }
