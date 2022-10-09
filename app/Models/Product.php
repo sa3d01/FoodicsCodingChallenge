@@ -10,7 +10,7 @@ class Product extends Model
     use HasFactory;
     protected $fillable = ['name'];
 
-    public function ingredients(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function ingredients()
     {
         return $this->hasMany(ProductIngredient::class);
     }
